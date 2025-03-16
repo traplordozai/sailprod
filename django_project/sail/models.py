@@ -133,12 +133,12 @@ class StudentProfile(BaseModel):
 class OrganizationProfile(BaseModel):
     """Profile for organizations that can host students."""
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='organization_profile')
-    name = models.CharField(max_length=128, nullable=False)
-    area_of_law = models.CharField(max_length=64, nullable=False)
+    name = models.CharField(max_length=128, null=False)
+    area_of_law = models.CharField(max_length=64, null=False)
     description = models.TextField(blank=True, null=True)
     website = models.CharField(max_length=256, blank=True, null=True)
-    location = models.CharField(max_length=128, nullable=False)
-    work_mode = models.CharField(max_length=20, nullable=False)
+    location = models.CharField(max_length=128, null=False)
+    work_mode = models.CharField(max_length=20, null=False)
     available_positions = models.IntegerField(default=1)
     filled_positions = models.IntegerField(default=0)
 
@@ -161,8 +161,8 @@ class FacultyProfile(BaseModel):
 class AreaRanking(BaseModel): # Added AreaRanking model
     """Student ranking preferences for different areas of law."""
     student_profile = models.ForeignKey('sail.StudentProfile', on_delete=models.CASCADE, related_name='rankings') # ForeignKey to Django model, REPLACE 'your_app_name' WITH 'sail'
-    area_of_law = models.CharField(max_length=64, nullable=False)
-    rank = models.IntegerField(nullable=False)
+    area_of_law = models.CharField(max_length=64, null=False)
+    rank = models.IntegerField(null=False)
 
     def __str__(self):
         return f"Area Ranking for {self.student_profile.user.get_full_name()} - {self.area_of_law}: Rank {self.rank}"

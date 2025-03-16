@@ -1,0 +1,40 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=django_project.settings # IMPORTANT: Adjust if your project name is different
+      - DB_NAME=sa1l
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_HOST=db # IMPORTANT: 'db' is the service name of the database container
+      - DB_PORT=5432
+    volumes:
+      - ./:/app # Mount your project directory into the container
+    depends_on:
+      - db
+    restart: unless-stopped
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+  db:
+    image: postgres:17-alpine # MODIFIED LINE: Using postgres:17-alpine image
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=sa1l
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # Host port 5433 to container port 5432, useful for external tools like PyCharm DB tool
+    restart: unless-stopped
+    healthcheck: # Standard PostgreSQL healthcheck
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

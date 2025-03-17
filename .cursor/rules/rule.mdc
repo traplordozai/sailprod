@@ -1,0 +1,129 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+PROJECT INSTRUCTIONS
+You must consistently follow a clear chain-of-thought reasoning process throughout every step, explicitly stating what you're doing and why. The user is very intelligent, using PyCharm, and can follow detailed instructions but is not a coder. Provide clear, granular guidance at every stage considering codebase and intended use. Always make changes directly in PyCharm.
+
+1. Django Backend Implementation
+
+Project Structure & Organization
+Modular Django apps clearly organized by domain functionality.
+Explicit separation between models, services, and APIs.
+Custom middleware for authentication and request/response handling.
+RESTful API endpoints designed per Django REST Framework (DRF) best practices.
+Abstract base classes for shared model fields and behaviors.
+Custom model managers/QuerySets for complex queries.
+Granular access control with custom permission classes.
+Database & Model Design
+Normalized database models with clear relationships and explicit constraints.
+Custom model managers encapsulating complex queries.
+Optimized database indexes on frequently queried fields.
+Consistent use of select_related()/prefetch_related() to avoid N+1 queries.
+Validation via model clean() methods and validators.
+PostgreSQL fields (JSONField, ArrayField) when beneficial.
+Explicit foreign key behaviors (CASCADE/PROTECT/SET_NULL) defined clearly.
+DRF Implementation
+Explicitly defined ViewSets with action decorators for custom endpoints.
+Nested serializers with controlled depth to prevent performance degradation.
+Custom pagination tailored to content.
+Field-level and object-level serializer validation.
+Granular permissions via custom DRF permission classes.
+Secure JWT authentication with token rotation.
+Clear exception handling with DRF custom handlers.
+API filtering/searching via django-filter.
+Security Best Practices
+Secure middleware explicitly configured (CSRF, secure cookies, CSP, XSS headers).
+Rate limiting on authentication/sensitive endpoints.
+Password hashing with Argon2 or bcrypt.
+CORS settings explicitly set per allowed origins.
+Environment-based settings explicitly managed (django-environ/python-decouple).
+Django Debug Toolbar active only in development environment.
+Performance Optimization
+Query optimizations (select_related, prefetch_related).
+Database connection pooling (django-db-connection-pool).
+Redis-based caching for sessions and frequently accessed queries.
+ORM query hints for complex operations.
+Asynchronous tasks via Celery.
+Explicit database transaction management.
+2. React/TypeScript/Tailwind Frontend Implementation
+
+TypeScript Configuration
+Strict TypeScript rules enabled (strict, noImplicitAny, strictNullChecks).
+Path aliases for simplified imports.
+ESLint integration with explicit TypeScript rules.
+Asset handling with TypeScript explicitly configured.
+Barrel exports for cleaner component imports.
+Component Architecture
+Atomic design clearly implemented (atoms, molecules, organisms, templates, pages).
+Explicitly typed component props using interfaces.
+Context API providers for cross-cutting concerns (auth, API client, notifications).
+Custom reusable hooks explicitly typed.
+Clear container/presentational component separation.
+React Router configured explicitly with route protection and lazy loading.
+Tailwind CSS Implementation
+Tailwind explicitly aligned with brand guidelines (colors, spacing, typography).
+Explicit responsive design patterns.
+PurgeCSS explicitly configured for optimized builds.
+State Management
+Secure JWT handling with httpOnly cookies and token refresh explicitly implemented.
+Role-based permissions explicitly managed.
+React Query for type-safe server state (optimistic updates, prefetching).
+Explicit client-state management via Context API or Zustand (immutable updates, normalized data).
+API Integration Layer
+Typed Axios API client explicitly configured with interceptors (auth/error handling).
+Request cancellation and retry logic explicitly implemented.
+Structured error handling and clear user-friendly error messaging.
+Form Handling & Validation
+React Hook Form explicitly integrated with Zod/Yup schemas for validation.
+Explicit handling of controlled inputs with consistent error/loading states.
+Multi-step forms explicitly handled with state persistence.
+3. Systematic Debugging & Refactoring Instructions
+
+You must adopt a clear, explicit, chain-of-thought debugging methodology throughout.
+Backend Debugging & Refactoring (Django)
+Explicitly use Django Debug Toolbar to identify N+1 query issues.
+Optimize queries (select_related(), indexing).
+Replace inefficient ORM logic explicitly with bulk operations.
+Refactor views clearly to enforce Single Responsibility Principle (move logic into services).
+Model normalization explicitly applied to enforce integrity.
+Input validation explicitly performed to prevent security vulnerabilities (SQL injection).
+Authentication explicitly secured with JWT token rotation and secure password resets.
+Rate limiting explicitly applied to sensitive/auth endpoints.
+Frontend Debugging & Refactoring (React/TypeScript)
+Explicit TypeScript improvements (interfaces, generics, type guards).
+Refactor large components explicitly into smaller, reusable hooks/components.
+Explicitly optimize rendering (React.memo, useMemo, useCallback).
+Analyze bundle size explicitly; replace heavy dependencies; implement code splitting.
+State management explicitly refactored to prevent prop drilling, race conditions, and to implement selectors clearly.
+API calls explicitly refactored with React Query, retry logic, global error handling.
+Tailwind CSS Optimization
+Explicitly refactor inconsistent styles to Tailwind utilities.
+Responsive layouts, typography, and spacing explicitly standardized.
+Tailwind config explicitly optimized for smaller bundle sizes.
+Django-React Integration Debugging
+
+Explicitly validate API contract between frontend (TypeScript) and backend serializers.
+Clearly address JWT token refresh issues, secure cookie management, and CSRF protections.
+Explicit handling of multipart form-data uploads and file validation.
+Methodical Debugging Approach
+
+Systematic Issue Identification
+Explicitly review Django logs, JavaScript console, Django Debug Toolbar, React DevTools Profiler, network requests, and TypeScript errors.
+Issue Prioritization
+Clearly classify by severity: Critical (core functionality), Major (user experience), Minor (cosmetic).
+Explicitly prioritize foundational issues first (auth/API), then performance, then UI/UX.
+Iterative Fix-and-Verify Process
+Address one issue explicitly at a time with minimal, focused changes.
+Verify fixes explicitly through comprehensive testing.
+Clearly document each fix with before/after details.
+Explicitly check for regressions after each fix.
+Comprehensive Documentation
+Explicit documentation of each issue:
+Root cause clearly identified.
+Solution explicitly detailed.
+Verification strategy clearly outlined.
+Performance implications explicitly noted.
+Technical debt clearly documented for future resolution.
+The user expects a dual-function AI capable of designing/developing AND systematically debugging/troubleshooting the project. Your instructions must consistently reflect clear reasoning, precise guidance, and careful consideration of the existing codebase and intended functionality.

@@ -5,10 +5,12 @@ Advanced DRF ViewSets for CRUD, plus custom actions for CSV import, PDF upload, 
 """
 
 import os
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework import viewsets, status, generics
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
 from django.conf import settings
 from django.core.files.storage import default_storage
 
@@ -19,10 +21,63 @@ from .models import (
 from .serializers import (
     StudentProfileSerializer, MatchingRoundSerializer,
     OrganizationProfileSerializer, FacultyProfileSerializer,
-    StatementSerializer, StudentGradeSerializer
+    StatementSerializer, StudentGradeSerializer,
+    LoginSerializer, RegisterSerializer
 )
 from .permissions import IsAdminOrReadOnly
 from .services import import_students_from_csv, parse_grades_pdf, run_matching
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_view(request):
+    serializer = LoginSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        password = serializer.validated_data['password']
+        user = authenticate(email=email, password=password)
+        
+        if user:
+            refresh = RefreshToken.for_user(user)
+            
+            # Determine user role
+            role = None
+            if hasattr(user, 'studentprofile'):
+                role = 'Student'
+            elif hasattr(user, 'facultyprofile'):
+                role = 'Faculty'
+            elif hasattr(user, 'organizationprofile'):
+                role = 'Organization'
+            
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'role': role
+                }
+            })
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_view(request):
+    serializer = RegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'role': serializer.validated_data['role']
+            }
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class StudentProfileViewSet(viewsets.ModelViewSet):
     queryset = StudentProfile.objects.select_related('grades').prefetch_related('statements')

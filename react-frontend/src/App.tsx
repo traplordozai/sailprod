@@ -1,23 +1,29 @@
-import React from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
-import Dashboard from './pages/Dashboard'
-import StudentManagement from './pages/StudentManagement'
-import MatchingProcess from './pages/MatchingProcess'
+// In your App.tsx or routing file
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
+import YourExistingLoginPage from './pages/YourExistingLoginPage';
+import YourDashboardPage from './pages/YourDashboardPage';
+// Import your other existing components
 
-export default function App() {
+function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-blue-600 text-white p-4">
-        <Link className="mr-4" to="/dashboard">Dashboard</Link>
-        <Link className="mr-4" to="/students">Students</Link>
-        <Link className="mr-4" to="/matching">Matching</Link>
-      </nav>
+    <BrowserRouter>
       <Routes>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/students" element={<StudentManagement />} />
-        <Route path="/matching" element={<MatchingProcess />} />
-        <Route path="/" element={<Dashboard />} />
+        {/* Public routes */}
+        <Route path="/" element={<YourExistingLoginPage />} />
+        <Route path="/login" element={<YourExistingLoginPage />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <YourDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Add your other protected routes here */}
       </Routes>
-    </div>
-  )
+    </BrowserRouter>
+  );
 }

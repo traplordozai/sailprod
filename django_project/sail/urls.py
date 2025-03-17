@@ -6,22 +6,21 @@ App-level routes using DRF's DefaultRouter.
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-
-from django_project.sail.views import (
-    StudentProfileViewSet, MatchingRoundViewSet,
-    OrganizationProfileViewSet, FacultyProfileViewSet,
-    StatementViewSet, StudentGradeViewSet
-)
+from . import views
 
 router = DefaultRouter()
-router.register(r'students', StudentProfileViewSet, basename='student')
-router.register(r'matching-rounds', MatchingRoundViewSet, basename='matching-rounds')
-router.register(r'organizations', OrganizationProfileViewSet, basename='organizations')
-router.register(r'faculty', FacultyProfileViewSet, basename='faculty')
-router.register(r'statements', StatementViewSet, basename='statements')
-router.register(r'grades', StudentGradeViewSet, basename='grades')
+router.register(r'students', views.StudentProfileViewSet)
+router.register(r'organizations', views.OrganizationProfileViewSet)
+router.register(r'faculty', views.FacultyProfileViewSet)
+router.register(r'statements', views.StatementViewSet)
+router.register(r'grades', views.StudentGradeViewSet)
+router.register(r'matching', views.MatchingRoundViewSet)
 
 urlpatterns = [
-    # Instead of including ourselves, just include the router
+    # Authentication endpoints
+    path('auth/login/', views.login_view, name='auth_login'),
+    path('auth/register/', views.register_view, name='auth_register'),
+    
+    # API endpoints
     path('', include(router.urls)),
 ]

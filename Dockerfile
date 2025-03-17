@@ -21,10 +21,17 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the code
 COPY . .
 
+# Copy and enable your entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 ENV PYTHONPATH=/app
 
 # Expose port 8000
 EXPOSE 8000
+
+# Use our custom entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
 
 # Run gunicorn with a healthcheck
 # Adjust healthcheck path if needed for Django

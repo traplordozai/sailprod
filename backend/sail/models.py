@@ -1,5 +1,5 @@
 """
-django_project/sail/models.py
+backend/sail/models.py
 -----------------------------
 Core models for Student, Organization, Matching, etc.
 """

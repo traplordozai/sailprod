@@ -1,5 +1,5 @@
 """
-django_project/sail/urls.py
+backend/sail/urls.py
 ---------------------------
 App-level routes using DRF's DefaultRouter.
 """

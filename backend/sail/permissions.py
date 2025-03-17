@@ -1,5 +1,5 @@
 """
-django_project/sail/permissions.py
+backend/sail/permissions.py
 ----------------------------------
 Granular permissions for DRF endpoints.
 """

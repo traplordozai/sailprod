@@ -1,5 +1,5 @@
 """
-django_project/sail/middleware.py
+backend/sail/middleware.py
 ---------------------------------
 Custom security/header middleware and other middlewares.
 """

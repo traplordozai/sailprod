@@ -1,5 +1,5 @@
 """
-django_project/sail/services/__init__.py
+backend/sail/services/__init__.py
 ----------------------------------------
 Declares 'services' as a package for CSV import, PDF parsing, etc.
 """

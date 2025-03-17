@@ -1,5 +1,5 @@
 """
-django_project/sail/services/pdf_grades_parser.py
+backend/sail/services/pdf_grades_parser.py
 -------------------------------------------------
 Parses PDFs (like dhaliwal.pdf) for student ID and grades.
 """

@@ -1,5 +1,5 @@
 """
-django_project/sail/admin.py
+backend/sail/admin.py
 ----------------------------
 Register models for the Django admin interface.
 """

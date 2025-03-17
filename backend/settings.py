@@ -1,5 +1,5 @@
 """
-django_project/settings.py
+backend/settings.py
 --------------------------------------------------
 Environment-based settings with django-environ.
 """

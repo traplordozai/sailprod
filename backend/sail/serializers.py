@@ -1,5 +1,5 @@
 """
-django_project/sail/serializers.py
+backend/sail/serializers.py
 ----------------------------------
 DRF serializers for advanced usage.
 """

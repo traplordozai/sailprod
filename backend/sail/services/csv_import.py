@@ -1,5 +1,5 @@
 """
-django_project/sail/services/csv_import.py
+backend/sail/services/csv_import.py
 ------------------------------------------
 Imports data from SA1L_deduplicated.csv into StudentProfile + Statement.
 """

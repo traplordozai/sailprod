@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 class SailConfig(AppConfig):
-    name = 'django_project.sail'
+    name = 'backend.sail'
     verbose_name = "SAIL Application"

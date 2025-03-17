@@ -21,7 +21,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DJANGO_SETTINGS_MODULE=django_project.settings # IMPORTANT: Adjust if your project name is different
+      - DJANGO_SETTINGS_MODULE=backend.settings # IMPORTANT: Adjust if your project name is different
       - DB_NAME=sa1l
       - DB_USER=postgres
       - DB_PASSWORD=postgres
@@ -35,11 +35,11 @@ services:
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
 
   frontend:
-    build: ./react-frontend
+    build: frontend
     ports:
       - "3000:3000"
     volumes:
-      - ./react-frontend:/usr/src/app
+      - ./frontend:/usr/src/app
     command: npm start
 
 

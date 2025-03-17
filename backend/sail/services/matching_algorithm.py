@@ -1,5 +1,5 @@
 """
-django_project/sail/services/matching_algorithm.py
+backend/sail/services/matching_algorithm.py
 --------------------------------------------------
 Implements the logic from 1-NEW.md to match students to orgs/faculty.
 """

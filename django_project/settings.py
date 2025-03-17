@@ -10,6 +10,7 @@ from pathlib import Path
 import environ
 from datetime import timedelta
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
@@ -19,35 +20,35 @@ env_file = os.path.join(BASE_DIR, '.env')
 if os.path.isfile(env_file):
     env.read_env(env_file)
 
-SECRET_KEY = env('SECRET_KEY', default='change-me-please')
-DEBUG = env('DEBUG', default=True)
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-your-secret-key-here')
+DEBUG = env('DEBUG', default=False)
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '.onrender.com'])
 
 # Application definition
 INSTALLED_APPS = [
-    # Django core
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    # 3rd-party
+    
+    # Third party apps
     'rest_framework',
     'rest_framework.authtoken',
-    'django_filters',
     'corsheaders',
     'rest_framework_simplejwt',
-
+    'django_filters',
+    
     # Local apps
     'django_project.sail.apps.SailConfig',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add whitenoise
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # for cross-origin requests
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -60,10 +61,12 @@ ROOT_URLCONF = 'django_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -72,44 +75,86 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'django_project.wsgi.application'
-ASGI_APPLICATION = 'django_project.asgi.application'
 
 # Database
+# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DATABASE_NAME', default='postgres'),
-        'USER': env('DATABASE_USER', default='postgres'),
-        'PASSWORD': env('DATABASE_PASSWORD', default='postgres'),
-        'HOST': env('DATABASE_HOST', default='db'),
-        'PORT': env('DATABASE_PORT', default='5432'),
-    }
+    'default': env.db_url(
+        'DATABASE_URL',
+        default='postgres://postgres:postgres@localhost:5432/postgres'
+    )
 }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
-# Optionally use Argon2 or bcrypt
-# from django.contrib.auth.hashers import Argon2PasswordHasher
-# PASSWORD_HASHERS = [
-#     'django.contrib.auth.hashers.Argon2PasswordHasher',
-#     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
-#     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
-#     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
-# ]
 
+# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
+}
+
+# JWT Settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in development
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://your-frontend-domain.onrender.com'  # Add your frontend domain
+])
+CORS_ALLOW_CREDENTIALS = True
+
+# Security settings
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Media if needed
 MEDIA_URL = '/media/'

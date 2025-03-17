@@ -25,10 +25,10 @@ interface RegisterData {
   orgName?: string;
 }
 
-const API_URL = 'http://localhost:8000/api';  // Adjust this to match your Django backend URL
+const API_URL = 'http://127.0.0.1:8000/api';  // Match the backend URL exactly
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
-  const response = await fetch(`${API_URL}/auth/login/`, {
+  const response = await fetch(`${API_URL}/token/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -44,7 +44,7 @@ export async function login(email: string, password: string): Promise<LoginRespo
 }
 
 export async function register(data: RegisterData): Promise<LoginResponse> {
-  const response = await fetch(`${API_URL}/auth/register/`, {
+  const response = await fetch(`${API_URL}/sail/auth/register/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ export async function register(data: RegisterData): Promise<LoginResponse> {
 }
 
 export async function refreshToken(token: string): Promise<{ access: string }> {
-  const response = await fetch(`${API_URL}/auth/token/refresh/`, {
+  const response = await fetch(`${API_URL}/token/refresh/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -84,7 +84,7 @@ export function logout(): void {
 
 export const verifyToken = async (token: string): Promise<boolean> => {
   try {
-    await axios.post(`${API_URL}/api/token/verify/`, {
+    await axios.post(`${API_URL}/token/verify/`, {
       token
     });
     return true;

@@ -5,46 +5,68 @@ Parses PDFs (like dhaliwal.pdf) for student ID and grades.
 """
 
 import re
-import pypdf
+import logging
+from pypdf import PdfReader
+from django.core.exceptions import ValidationError
 from ..models import StudentProfile, StudentGrade
 
-def parse_grades_pdf(pdf_path):
-    with open(pdf_path, 'rb') as f:
-        reader = PyPDF2.PdfReader(f)
-        text_data = []
-        for page in reader.pages:
-            text_data.append(page.extract_text())
-    full_text = "\n".join(text_data)
+logger = logging.getLogger(__name__)
 
-    # naive example: look for "Student ID: <digits>"
-    sid_match = re.search(r"Student ID:\s*(\d+)", full_text)
-    if not sid_match:
-        return None
+VALID_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-']
 
-    sid = sid_match.group(1)
+class GradeParserError(Exception):
+    pass
+
+def validate_grade(grade: str) -> str:
+    if grade.upper() in VALID_GRADES:
+        return grade.upper()
+    raise ValidationError(f'Invalid grade: {grade}')
+
+def parse_grades_pdf(pdf_path: str) -> StudentGrade:
     try:
-        student = StudentProfile.objects.get(student_id=sid)
-    except StudentProfile.DoesNotExist:
-        return None
+        with open(pdf_path, 'rb') as f:
+            reader = PdfReader(f)
+            text_data = [page.extract_text() for page in reader.pages]
+            full_text = "\n".join(text_data)
 
-    # create or get StudentGrade
-    sg, _ = StudentGrade.objects.get_or_create(student_profile=student)
+        # Extract student ID
+        sid_match = re.search(r"Student\s*ID[:\s]*(\d+)", full_text, re.IGNORECASE)
+        if not sid_match:
+            raise GradeParserError('Could not find student ID in PDF')
 
-    # parse letter grades
-    # Example: "Constitutional Law – A" or "Case Brief grade: 5/5"
-    # You must adapt regex to your actual PDF format
+        sid = sid_match.group(1)
+        try:
+            student = StudentProfile.objects.get(student_id=sid)
+        except StudentProfile.DoesNotExist:
+            raise GradeParserError(f'Student with ID {sid} not found')
 
-    # For demonstration:
-    cons = re.search(r"Constitutional Law.*?([A-D][\+\-]?)", full_text)
-    if cons:
-        sg.constitutional_law = cons.group(1)
+        # Create or get StudentGrade
+        sg, _ = StudentGrade.objects.get_or_create(student_profile=student)
 
-    # Repeat for other classes...
-    # e.g. "Contracts – B+", "Criminal Law – A", etc.
-    # For LRW subgrades:
-    case_brief = re.search(r"Case Brief grade:\s*(\S+)", full_text)
-    if case_brief:
-        sg.lrw_case_brief = case_brief.group(1)
+        # Parse grades with improved regex patterns
+        grade_patterns = {
+            'constitutional_law': r"Constitutional\s*Law[\s\-:]*([A-D][+-]?)",
+            'contracts': r"Contracts[\s\-:]*([A-D][+-]?)",
+            'criminal_law': r"Criminal\s*Law[\s\-:]*([A-D][+-]?)",
+            'property_law': r"Property\s*Law[\s\-:]*([A-D][+-]?)",
+            'torts': r"Torts[\s\-:]*([A-D][+-]?)",
+            'lrw_case_brief': r"Case\s*Brief[\s\-:]*([A-D][+-]?|\d+/\d+)",
+            'lrw_multi_case': r"Multiple\s*Case\s*Analysis[\s\-:]*([A-D][+-]?|\d+/\d+)",
+            'lrw_memo': r"Short\s*Legal\s*Memorandum[\s\-:]*([A-D][+-]?|\d+/\d+)",
+        }
 
-    sg.save()
-    return sg
+        for field, pattern in grade_patterns.items():
+            match = re.search(pattern, full_text, re.IGNORECASE)
+            if match:
+                try:
+                    grade = validate_grade(match.group(1))
+                    setattr(sg, field, grade)
+                except ValidationError as e:
+                    logger.warning(f'Invalid grade format for {field}: {e}')
+
+        sg.save()
+        return sg
+
+    except Exception as e:
+        logger.error(f'Error parsing PDF grades: {str(e)}')
+        raise GradeParserError(f'Failed to parse grades: {str(e)}')

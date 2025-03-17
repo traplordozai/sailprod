@@ -3,15 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "npx vite",
+    "build": "npx vite build",
+    "preview": "npx vite preview"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
+    "axios": "^1.4.0",
+    "clsx": "^2.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.10.0",
-    "axios": "^1.4.0"
+    "recharts": "^2.15.1"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",

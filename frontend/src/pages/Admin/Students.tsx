@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import axios from 'axios'
+import CsvImport from '../../components/CsvImport';
 
 export default function Students() {
   const [csvFile, setCsvFile] = useState<File | null>(null)
@@ -7,6 +8,7 @@ export default function Students() {
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [pdfMessage, setPdfMessage] = useState('')
   const [studentId, setStudentId] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const handleCsvImport = async () => {
     if (!csvFile) return
@@ -34,8 +36,17 @@ export default function Students() {
     }
   }
 
+  const handleImportSuccess = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in space-y-6">
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Import Students</h2>
+        <CsvImport onSuccess={handleImportSuccess} />
+      </div>
+
       <h1 className="text-3xl font-benton-sans-bold mb-4">Student Management</h1>
 
       {/* CSV Import */}

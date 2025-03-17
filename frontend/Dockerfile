@@ -1,7 +1,22 @@
-FROM node:22-alpine
-WORKDIR /usr/src/app
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
 COPY package*.json ./
-RUN npm install
+
+# Clean install dependencies
+RUN npm ci
+
+# Copy the rest of the application
 COPY . .
+
+# Add these environment variables to help with Vite
+ENV HOST=0.0.0.0
+ENV PORT=3000
+
+# Expose port 3000
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+
+# Start the app
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

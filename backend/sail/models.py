@@ -6,7 +6,6 @@ Core models for Student, Organization, Matching, etc.
 
 import uuid
 from django.db import models
-from django.conf import settings
 
 class BaseModel(models.Model):
     """
@@ -23,17 +22,17 @@ class StudentProfile(BaseModel):
     """
     Holds data merged from CSV + PDF.
     """
-    student_id = models.CharField(max_length=50, unique=True)
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    # Remove the default lambda and unique constraint temporarily
+    student_id = models.CharField(max_length=50)
+    first_name = models.CharField(max_length=100, default="Unknown")
+    last_name = models.CharField(max_length=100, default="Student")
     email = models.EmailField(blank=True, null=True)
 
     program = models.CharField(max_length=128, blank=True, null=True)
     areas_of_law = models.TextField(blank=True, null=True)
-    location_preferences = models.TextField(blank=True, null=True)   # can store comma-separated
-    work_preferences = models.TextField(blank=True, null=True)       # e.g. "remote, in-person"
+    location_preferences = models.TextField(blank=True, null=True)
+    work_preferences = models.TextField(blank=True, null=True)
 
-    # match / approval status
     is_matched = models.BooleanField(default=False)
     admin_approval_needed = models.BooleanField(default=False)
 
@@ -45,7 +44,7 @@ class Statement(BaseModel):
     Student statements from CSV, with an optional numeric grade out of 25.
     """
     student_profile = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='statements')
-    content = models.TextField()
+    content = models.TextField(default="")
     area_of_law = models.CharField(max_length=128, blank=True, null=True)
     statement_grade = models.IntegerField(null=True, blank=True)
 
@@ -72,10 +71,9 @@ class StudentGrade(BaseModel):
         return f"Grades for {self.student_profile}"
 
 class OrganizationProfile(BaseModel):
-    name = models.CharField(max_length=128)
+    name = models.CharField(max_length=128, default="Unknown Organization")
     area_of_law = models.CharField(max_length=64, blank=True, null=True)
     location = models.CharField(max_length=128, blank=True, null=True)
-
     available_positions = models.IntegerField(default=1)
     filled_positions = models.IntegerField(default=0)
 
@@ -83,10 +81,9 @@ class OrganizationProfile(BaseModel):
         return self.name
 
 class FacultyProfile(BaseModel):
-    full_name = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=100, default="Unknown Faculty")
     department = models.CharField(max_length=128, blank=True, null=True)
     research_areas = models.TextField(blank=True, null=True)
-
     available_positions = models.IntegerField(default=1)
     filled_positions = models.IntegerField(default=0)
 
@@ -94,7 +91,7 @@ class FacultyProfile(BaseModel):
         return self.full_name
 
 class MatchingRound(BaseModel):
-    round_number = models.IntegerField()
+    round_number = models.IntegerField(default=1)
     status = models.CharField(max_length=20, default='pending')
     matched_count = models.IntegerField(default=0)
     total_students = models.IntegerField(default=0)

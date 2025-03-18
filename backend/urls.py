@@ -28,8 +28,8 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
 
-    # Root URL - redirect to admin
-    path('', RedirectView.as_view(url='/admin/'), name='home'),
+    # Root URL - redirect to frontend admin dashboard
+    path('', RedirectView.as_view(url=settings.FRONTEND_ADMIN_URL), name='home'),
 ]
 
 if settings.DEBUG:

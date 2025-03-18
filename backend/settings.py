@@ -162,6 +162,10 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# Frontend URL configuration
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+FRONTEND_ADMIN_URL = f"{FRONTEND_URL}/admin"
+
 # Rest Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

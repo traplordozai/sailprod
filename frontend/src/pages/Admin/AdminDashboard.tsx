@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UserIcon, UserGroupIcon, ClockIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import apiClient from '../../services/api';
 
 interface StatCardProps {
   title: string;
@@ -41,8 +42,18 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await axios.get('http://127.0.0.1:8000/api/admin/stats/');
-        setStats(res.data);
+        const res = await apiClient.get('/admin/dashboard/stats/');
+        setStats({
+          totalStudents: res.data.total_students,
+          matchedStudents: res.data.matched_students,
+          pendingMatches: res.data.pending_matches,
+          needingApproval: res.data.needs_approval,
+          totalOrganizations: res.data.total_organizations,
+          availablePositions: res.data.available_positions,
+          ungradedStatements: res.data.ungraded_statements,
+          matchesByStatus: res.data.matches_by_status,
+          matchesByArea: res.data.matches_by_area,
+        });
       } catch (err) {
         setError('Failed to load dashboard statistics');
         console.error(err);

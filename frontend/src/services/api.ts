@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 // Function to get tokens from localStorage
 const getTokens = () => {
@@ -20,6 +20,7 @@ const setTokens = (access: string, refresh: string) => {
 const removeTokens = () => {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user_role');
 };
 
 const apiClient = axios.create({
@@ -27,6 +28,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Add a request interceptor
@@ -59,7 +61,7 @@ apiClient.interceptors.response.use(
         if (!tokens.refresh) throw new Error('No refresh token available');
 
         // Try to get a new access token
-        const response = await axios.post(`${API_BASE_URL}/api/token/refresh/`, {
+        const response = await axios.post(`${API_BASE_URL}/token/refresh/`, {
           refresh: tokens.refresh,
         });
 
@@ -82,10 +84,11 @@ apiClient.interceptors.response.use(
 );
 
 // Authentication API functions
-export const login = async (username: string, password: string) => {
+export const login = async (email: string, password: string) => {
   try {
-    const response = await apiClient.post('/api/token/', { username, password });
+    const response = await apiClient.post('/auth/login/', { email, password });
     setTokens(response.data.access, response.data.refresh);
+    localStorage.setItem('user_role', response.data.user.role);
     return response.data;
   } catch (error) {
     console.error('Login failed:', error);
@@ -100,7 +103,7 @@ export const logout = () => {
 // Test connection function (publicly accessible)
 export const testConnection = async () => {
   try {
-    const response = await apiClient.get('/api/test-connection/');
+    const response = await apiClient.get('/test-connection/');
     return response.data;
   } catch (error) {
     console.error('API connection test failed:', error);

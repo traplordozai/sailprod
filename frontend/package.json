@@ -8,9 +8,11 @@
     "preview": "npx vite preview"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
     "axios": "^1.4.0",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.10.0",

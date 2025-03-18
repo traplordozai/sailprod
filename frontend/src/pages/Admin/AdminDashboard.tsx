@@ -1,9 +1,54 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
-import axios from 'axios'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UserIcon, UserGroupIcon, ClockIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
-import apiClient from '../../services/api';
+
+// Define types for our data structures
+interface StatusData {
+  status: string;
+  count: number;
+}
+
+interface AreaData {
+  area_of_law: string;
+  count: number;
+}
+
+interface DashboardStats {
+  totalStudents: number;
+  matchedStudents: number;
+  pendingMatches: number;
+  needingApproval: number;
+  totalOrganizations: number;
+  availablePositions: number;
+  ungradedStatements: number;
+  matchesByStatus: StatusData[];
+  matchesByArea: AreaData[];
+}
+
+// Mock data for development
+const MOCK_DATA = {
+  total_students: 120,
+  matched_students: 85,
+  pending_matches: 15,
+  needs_approval: 8,
+  total_organizations: 30,
+  available_positions: 45,
+  ungraded_statements: 12,
+  matches_by_status: [
+    { status: 'Pending', count: 15 },
+    { status: 'Matched', count: 85 },
+    { status: 'Declined', count: 5 },
+    { status: 'Approved', count: 65 }
+  ],
+  matches_by_area: [
+    { area_of_law: 'Corporate', count: 25 },
+    { area_of_law: 'Criminal', count: 18 },
+    { area_of_law: 'Family', count: 22 },
+    { area_of_law: 'IP', count: 15 },
+    { area_of_law: 'Real Estate', count: 10 }
+  ]
+};
 
 interface StatCardProps {
   title: string;
@@ -13,8 +58,8 @@ interface StatCardProps {
 }
 
 const StatCard = ({ title, value, icon, color }: StatCardProps) => (
-  <div className={`p-6 bg-white rounded-lg shadow-md flex items-center space-x-4 border-l-4 border-${color}-500`}>
-    <div className={`p-3 rounded-full bg-${color}-100 text-${color}-500`}>
+  <div className={`p-6 bg-white rounded-lg shadow-md flex items-center space-x-4 border-l-4 ${color}`}>
+    <div className={`p-3 rounded-full ${color.replace('border-', 'bg-').replace('-500', '-100')} ${color.replace('border-', 'text-')}`}>
       {icon}
     </div>
     <div>
@@ -25,7 +70,7 @@ const StatCard = ({ title, value, icon, color }: StatCardProps) => (
 );
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     matchedStudents: 0,
     pendingMatches: 0,
@@ -40,28 +85,27 @@ export default function Dashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchStats = async () => {
+    // Simulate API call with mock data
+    setTimeout(() => {
       try {
-        const res = await apiClient.get('/admin/dashboard/stats/');
         setStats({
-          totalStudents: res.data.total_students,
-          matchedStudents: res.data.matched_students,
-          pendingMatches: res.data.pending_matches,
-          needingApproval: res.data.needs_approval,
-          totalOrganizations: res.data.total_organizations,
-          availablePositions: res.data.available_positions,
-          ungradedStatements: res.data.ungraded_statements,
-          matchesByStatus: res.data.matches_by_status,
-          matchesByArea: res.data.matches_by_area,
+          totalStudents: MOCK_DATA.total_students,
+          matchedStudents: MOCK_DATA.matched_students,
+          pendingMatches: MOCK_DATA.pending_matches,
+          needingApproval: MOCK_DATA.needs_approval,
+          totalOrganizations: MOCK_DATA.total_organizations,
+          availablePositions: MOCK_DATA.available_positions,
+          ungradedStatements: MOCK_DATA.ungraded_statements,
+          matchesByStatus: MOCK_DATA.matches_by_status,
+          matchesByArea: MOCK_DATA.matches_by_area,
         });
+        setLoading(false);
       } catch (err) {
         setError('Failed to load dashboard statistics');
         console.error(err);
-      } finally {
         setLoading(false);
       }
-    };
-    fetchStats();
+    }, 1000); // Simulate network delay
   }, []);
 
   if (loading) return <div className='p-4'>Loading dashboard...</div>;
@@ -77,25 +121,25 @@ export default function Dashboard() {
           title='Total Students'
           value={stats.totalStudents}
           icon={<UserIcon className='h-6 w-6' />}
-          color='blue'
+          color='border-blue-500'
         />
         <StatCard
           title='Matched Students'
           value={stats.matchedStudents}
           icon={<UserGroupIcon className='h-6 w-6' />}
-          color='green'
+          color='border-green-500'
         />
         <StatCard
           title='Pending Matches'
           value={stats.pendingMatches}
           icon={<ClockIcon className='h-6 w-6' />}
-          color='yellow'
+          color='border-yellow-500'
         />
         <StatCard
           title='Needing Approval'
           value={stats.needingApproval}
           icon={<ShieldCheckIcon className='h-6 w-6' />}
-          color='red'
+          color='border-red-500'
         />
       </div>
 
@@ -103,7 +147,7 @@ export default function Dashboard() {
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
         <div className='bg-white p-6 rounded-lg shadow-md'>
           <h2 className='text-xl font-semibold mb-4'>Matches by Status</h2>
-          <ResponsiveContainer width='100%' height={400}>
+          <ResponsiveContainer width='100%' height={300}>
             <BarChart data={stats.matchesByStatus}>
               <CartesianGrid strokeDasharray='3 3' />
               <XAxis dataKey='status' />
@@ -117,7 +161,7 @@ export default function Dashboard() {
 
         <div className='bg-white p-6 rounded-lg shadow-md'>
           <h2 className='text-xl font-semibold mb-4'>Matches by Area of Law</h2>
-          <ResponsiveContainer width='100%' height={400}>
+          <ResponsiveContainer width='100%' height={300}>
             <BarChart data={stats.matchesByArea}>
               <CartesianGrid strokeDasharray='3 3' />
               <XAxis dataKey='area_of_law' />

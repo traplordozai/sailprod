@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LandingAndLogin from './pages/LandingAndLogin';
 import AdminLayout from './pages/Admin/AdminLayout';
 import AdminDashboard from './pages/Admin/AdminDashboard';
@@ -33,6 +33,9 @@ class ErrorBoundary extends React.Component<
         <div className="p-8 bg-red-50 border border-red-300 rounded">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
           <p className="mb-4">Please try refreshing the page or contact support if the problem persists.</p>
+          <pre className="bg-red-100 p-2 rounded text-sm overflow-auto">
+            {this.state.error?.toString()}
+          </pre>
         </div>
       );
     }
@@ -52,17 +55,13 @@ function App() {
             
             {/* Admin routes */}
             <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="students" element={<Students />} />
               <Route path="organizations" element={<Organizations />} />
               <Route path="faculty" element={<Faculty />} />
               <Route path="matching" element={<Matching />} />
               <Route path="grading" element={<Grading />} />
-              <Route index element={
-                <div className="p-4 text-center text-gray-600">
-                  Select an option from the sidebar
-                </div>
-              } />
             </Route>
 
             {/* 404 route */}

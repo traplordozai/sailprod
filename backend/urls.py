@@ -18,6 +18,10 @@ from rest_framework_simplejwt.views import (
 )
 
 
+# Create a custom AdminSite class that just changes the site_url
+admin.site.site_url = settings.FRONTEND_ADMIN_URL
+
+
 urlpatterns = [
     # Django admin site
     path('admin/', admin.site.urls),
@@ -28,8 +32,8 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
 
-    # Root URL - redirect to frontend admin dashboard
-    path('', RedirectView.as_view(url=settings.FRONTEND_ADMIN_URL), name='home'),
+    # Redirect root URL to Django admin
+    path('', RedirectView.as_view(url='/admin/'), name='home'),
 ]
 
 if settings.DEBUG:

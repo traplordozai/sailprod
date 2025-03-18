@@ -17,6 +17,18 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   web:
     build: 
       context: .
@@ -26,6 +38,7 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=backend.settings
       - DATABASE_URL=postgres://postgres:postgres@db:5432/sa1l
+      - REDIS_URL=redis://redis:6379/0
       - DEBUG=1
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -36,7 +49,27 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A backend worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=backend.settings
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/sa1l
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   frontend:
     build:
@@ -55,3 +88,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:

@@ -117,7 +117,7 @@ else:
 # Override with DATABASE_URL if provided (for deployment environments)
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
-    DATABASES['default'] = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    DATABASES['default'] = dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
@@ -176,4 +176,9 @@ REST_FRAMEWORK = {
     ),
 }
 
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 # ... rest of your settings ... 

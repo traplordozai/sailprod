@@ -1,74 +1,91 @@
-// src/components/ProtectedRoute.tsx
-import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { verifyToken, refreshToken } from '../services/authService';
+/**
+ * File: frontend/src/components/ProtectedRoute.tsx
+ * Purpose: Route wrapper component for authentication protection
+ */
+
+import React from 'react'
+import { useState, useEffect } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { validateAuthState, hasPermission } from '../services/authUtils';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  element: React.ReactNode;
+  allowedRoles?: string[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  element, 
+  allowedRoles = ['Admin', 'admin'] 
+}) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    const validateToken = async () => {
-      const token = localStorage.getItem('access_token');
+    let isMounted = true;
 
-      if (!token) {
-        setIsAuthenticated(false);
-        setIsLoading(false);
-        return;
-      }
-
+    const checkAuth = async () => {
       try {
-        // Verify the token is valid
-        const isValid = await verifyToken(token);
-        setIsAuthenticated(isValid);
-
-        if (!isValid) {
-          // Try to refresh the token
-          const refreshTokenValue = localStorage.getItem('refresh_token');
-          if (refreshTokenValue) {
-            try {
-              const newAccessToken = await refreshToken(refreshTokenValue);
-              localStorage.setItem('access_token', newAccessToken);
-              setIsAuthenticated(true);
-            } catch (refreshError) {
-              // Refresh token is also invalid
-              localStorage.removeItem('access_token');
-              localStorage.removeItem('refresh_token');
-              setIsAuthenticated(false);
-            }
-          }
+        const authState = await validateAuthState();
+        
+        if (!isMounted) return;
+        
+        setIsAuthenticated(authState.isAuthenticated);
+        setAuthError(authState.error);
+        
+        if (authState.isAuthenticated) {
+          setIsAuthorized(hasPermission(allowedRoles));
+        } else {
+          setIsAuthorized(false);
         }
       } catch (error) {
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
+        console.error('Auth check error:', error);
+        if (isMounted) {
+          setIsAuthenticated(false);
+          setIsAuthorized(false);
+          setAuthError('Authentication verification failed');
+        }
       }
     };
+    
+    checkAuth();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [location.pathname, allowedRoles]);
 
-    validateToken();
-  }, []);
-
-  if (isLoading) {
-    // Show loading state while validating token
+  if (isAuthenticated === null || isAuthorized === null) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      <div className="flex flex-col items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700 mb-4"></div>
+        <p className="text-gray-600">Verifying authentication...</p>
+        {authError && (
+          <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded text-red-700 max-w-md text-center">
+            {authError}
+            <div className="mt-2">
+              <button 
+                onClick={() => navigate('/')}
+                className="text-sm text-purple-700 hover:text-purple-900"
+              >
+                Return to Login
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    // User is not authenticated, redirect to login
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
-  // User is authenticated, render the protected route
-  return <>{children}</>;
-};
+  if (!isAuthorized) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
-export default ProtectedRoute;
+  return <>{element}</>;
+};

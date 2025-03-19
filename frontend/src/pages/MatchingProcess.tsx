@@ -1,3 +1,8 @@
+/**
+ * File: frontend/src/pages/MatchingProcess.tsx
+ * Purpose: Page for managing the student-organization matching process
+ */
+
 import * as React from 'react'
 import { useState } from 'react'
 import axios from 'axios'

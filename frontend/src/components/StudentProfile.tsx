@@ -1,3 +1,8 @@
+/**
+ * File: frontend/src/components/StudentProfile.tsx
+ * Purpose: Component for displaying and editing student profile information
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -38,7 +43,7 @@ interface Statement {
   statement_grade: number;
 }
 
-const StudentProfile: React.FC = () => {
+const StudentProfileComponent: React.FC = () => {
   const { studentId } = useParams<{ studentId: string }>();
   const navigate = useNavigate();
   const [student, setStudent] = useState<Student | null>(null);
@@ -262,4 +267,4 @@ const StudentProfile: React.FC = () => {
   );
 };
 
-export default StudentProfile; 
+export default StudentProfileComponent; 

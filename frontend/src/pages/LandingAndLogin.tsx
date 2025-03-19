@@ -1,16 +1,20 @@
-// src/components/LoginPage.tsx
+/**
+ * File: frontend/src/pages/LandingAndLogin.tsx
+ * Purpose: Landing page with login functionality
+ */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login, register } from '../services/authService';
 import { Dropdown } from '../components/Dropdown';
+import AdminLoginModal from '../components/AdminLoginModal';
+import westernLawLogo from '../assets/images/western-law-logo.png';
 
-interface LoginPageProps {
-  // Add any props you need
-}
 
 export default function LandingAndLogin() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  
   // Additional states for sign-up fields
   const [role, setRole] = useState<"Student" | "Faculty" | "Organization">("Student");
   const [firstName, setFirstName] = useState("");
@@ -22,7 +26,7 @@ export default function LandingAndLogin() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
+  
   const roleOptions = [
     { value: "Student", label: "Student" },
     { value: "Faculty", label: "Faculty" },
@@ -68,11 +72,19 @@ export default function LandingAndLogin() {
 
     try {
       if (mode === "login") {
+        console.log(`Attempting login with: ${email}`);
         const response = await login(email, password);
-        localStorage.setItem('access_token', response.access);
-        localStorage.setItem('refresh_token', response.refresh);
-        localStorage.setItem('user_role', response.user.role);
-
+        
+        console.log('Login response:', response);
+        
+        // For Django admin users, they should always go to the admin dashboard
+        if (response.user.role === 'admin' || response.user.role === 'Admin') {
+          console.log('Redirecting to admin dashboard');
+          navigate('/admin/dashboard');
+          return;
+        }
+        
+        // For other users, follow standard role-based routing
         switch (response.user.role) {
           case "Student":
             navigate('/student/dashboard');
@@ -117,12 +129,14 @@ export default function LandingAndLogin() {
         }
       }
     } catch (error) {
+      console.error('Authentication error:', error);
+      
       if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {
         setErrorMessage(
           mode === "login"
-            ? "Invalid email or password"
+            ? "Invalid username or password. Please try again."
             : "Registration failed. Please try again."
         );
       }
@@ -130,14 +144,24 @@ export default function LandingAndLogin() {
       setIsLoading(false);
     }
   };
-
+  
   return (
     <div className="relative h-screen flex flex-col md:flex-row bg-white">
+      {/* Administrator Login Button */}
+      <div className="absolute top-6 right-6 z-10">
+        <button
+          onClick={() => setShowAdminModal(true)}
+          className="px-4 py-2 bg-purple-700 text-white rounded-md hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 text-sm font-medium"
+        >
+          Administrator Login
+        </button>
+      </div>
+    
       {/* Logo in top-left corner */}
       <div className="absolute top-8 left-8 z-10">
         <img
           alt="Western Law"
-          src="/src/assets/images/western-law-logo.png"
+          src={westernLawLogo}
           className="h-14 w-auto"
         />
       </div>
@@ -304,7 +328,9 @@ export default function LandingAndLogin() {
             )}
 
             {errorMessage && (
-              <div className="text-red-600 text-sm mt-2">{errorMessage}</div>
+              <div className="text-red-600 bg-red-50 p-3 rounded border border-red-200 text-sm mt-2">
+                {errorMessage}
+              </div>
             )}
 
             <div className="flex items-center justify-between">
@@ -357,10 +383,15 @@ export default function LandingAndLogin() {
       <div className="hidden md:block md:w-1/2">
         <img
           alt="Hero"
-          src="/src/assets/images/landing-4.jpg"
+          src="../assets/images/landing-4.jpg"
           className="h-full w-full object-cover"
         />
       </div>
+      
+      {/* Admin Login Modal */}
+      {showAdminModal && (
+        <AdminLoginModal onClose={() => setShowAdminModal(false)} />
+      )}
     </div>
   );
 }

@@ -1,3 +1,8 @@
+/**
+ * File: frontend/src/index.tsx
+ * Purpose: Application entry point
+ */
+
 import * as React from 'react'
 import * as ReactDOM from 'react-dom/client'
 import './index.css'

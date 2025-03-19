@@ -1,3 +1,8 @@
+/**
+ * File: frontend/src/pages/Admin/Matching.tsx
+ * Purpose: Interface for managing the matching algorithm and process
+ */
+
 import React, { useState } from 'react'
 import {
   MagnifyingGlassIcon,

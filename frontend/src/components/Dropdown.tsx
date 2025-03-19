@@ -1,4 +1,7 @@
-'use client'
+/**
+ * File: frontend/src/components/Dropdown.tsx
+ * Purpose: Reusable dropdown component
+ */
 
 import React, { useState, useRef, useEffect } from 'react'
 import clsx from 'clsx'

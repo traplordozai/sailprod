@@ -1,4 +1,8 @@
-// src/components/LoginForm.tsx
+/**
+ * File: frontend/src/components/LoginForm.tsx
+ * Purpose: Reusable login form component
+ */
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../services/authService';
@@ -24,16 +28,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onModeChange, mode = "login" }) =
     setErrorMessage('');
 
     try {
-      // Use the auth service
-      const tokens = await login(email, password);
-
-      // Store tokens in localStorage
-      localStorage.setItem('access_token', tokens.access);
-      localStorage.setItem('refresh_token', tokens.refresh);
-
-      // Redirect to appropriate dashboard based on user role
+      const response = await login(email, password);
+      
+      // Token strings are already stored in localStorage by the login function
       navigate('/admin/dashboard');
-
     } catch (error) {
       setErrorMessage('Invalid email or password. Please try again.');
     } finally {

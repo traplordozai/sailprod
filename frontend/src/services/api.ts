@@ -1,114 +1,188 @@
-import axios from 'axios';
+/**
+ * File: frontend/src/services/api.ts
+ * Purpose: Core API client configuration and common request handlers
+ */
+import axios from 'axios'
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { queryClient } from '../lib/queryClient';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+interface ApiError {
+  message: string;
+  status: number;
+}
 
-// Function to get tokens from localStorage
-const getTokens = () => {
-  return {
-    access: localStorage.getItem('access_token'),
-    refresh: localStorage.getItem('refresh_token'),
-  };
-};
+// Base fetch function with error handling
+async function fetchApi<T>(
+  url: string,
+  options?: RequestInit
+): Promise<T> {
+  const baseUrl = (import.meta.env as ImportMetaEnv).VITE_API_URL || 'http://localhost:8000/api';
+  const token = localStorage.getItem('access_token');
 
-// Function to set tokens in localStorage
-const setTokens = (access: string, refresh: string) => {
-  localStorage.setItem('access_token', access);
-  localStorage.setItem('refresh_token', refresh);
-};
+  const response = await fetch(`${baseUrl}${url}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+      ...options?.headers,
+    },
+  });
 
-// Function to remove tokens from localStorage
-const removeTokens = () => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-  localStorage.removeItem('user_role');
-};
+  if (!response.ok) {
+    const error: ApiError = {
+      message: 'An error occurred',
+      status: response.status,
+    };
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true,
-});
-
-// Add a request interceptor
-apiClient.interceptors.request.use(
-  (config) => {
-    // Add token to request headers if available
-    const tokens = getTokens();
-    if (tokens.access && config.headers) {
-      config.headers.Authorization = `Bearer ${tokens.access}`;
+    try {
+      const data = await response.json();
+      error.message = data.detail || data.message || data.error || error.message;
+    } catch {
+      // If JSON parsing fails, use status text
+      error.message = response.statusText;
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+
+    throw error;
   }
-);
 
-// Add a response interceptor for token refreshing
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  return response.json();
+}
 
-    // If error is 401 and we haven't tried to refresh token yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+// Type-safe API hooks
+export function useStudent(studentId: string) {
+  return useQuery({
+    queryKey: ['student', studentId],
+    queryFn: () => fetchApi<Student>(`/students/${studentId}/`),
+    enabled: !!studentId,
+  });
+}
 
-      try {
-        const tokens = getTokens();
-        if (!tokens.refresh) throw new Error('No refresh token available');
+export function useStudentProfile(studentId: string) {
+  return useQuery({
+    queryKey: ['studentProfile', studentId],
+    queryFn: () => fetchApi<StudentProfile>(`/students/${studentId}/profile/`),
+    enabled: !!studentId,
+  });
+}
 
-        // Try to get a new access token
-        const response = await axios.post(`${API_BASE_URL}/token/refresh/`, {
-          refresh: tokens.refresh,
-        });
+export function useUpdateStudent() {
+  return useMutation({
+    mutationFn: (data: { id: string; updates: Partial<Student> }) =>
+      fetchApi<Student>(`/students/${data.id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify(data.updates),
+      }),
+    onSuccess: (data) => {
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['student', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['studentProfile', data.id] });
+    },
+  });
+}
 
-        // Save the new tokens
-        setTokens(response.data.access, tokens.refresh);
+export function useUploadStudentCsv() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('csv_file', file);
 
-        // Update the failed request's Authorization header and retry
-        originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
-        return apiClient(originalRequest);
-      } catch (refreshError) {
-        // If refresh fails, redirect to login
-        removeTokens();
-        window.location.href = '/';
-        return Promise.reject(refreshError);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/students/import_csv/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
       }
-    }
 
-    return Promise.reject(error);
-  }
-);
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch all student lists
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+    },
+  });
+}
 
-// Authentication API functions
-export const login = async (email: string, password: string) => {
-  try {
-    const response = await apiClient.post('/auth/login/', { email, password });
-    setTokens(response.data.access, response.data.refresh);
-    localStorage.setItem('user_role', response.data.user.role);
-    return response.data;
-  } catch (error) {
-    console.error('Login failed:', error);
-    throw error;
-  }
-};
+export function useUploadGradesPdf() {
+  return useMutation({
+    mutationFn: async ({ studentId, file }: { studentId: string; file: File }) => {
+      const formData = new FormData();
+      formData.append('grades_pdf', file);
 
-export const logout = () => {
-  removeTokens();
-};
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/students/${studentId}/upload_grades_pdf/`,
+        {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        }
+      );
 
-// Test connection function (publicly accessible)
-export const testConnection = async () => {
-  try {
-    const response = await apiClient.get('/test-connection/');
-    return response.data;
-  } catch (error) {
-    console.error('API connection test failed:', error);
-    throw error;
-  }
-};
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
 
-export default apiClient;
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate and refetch affected queries
+      queryClient.invalidateQueries({ queryKey: ['student', variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ['studentProfile', variables.studentId] });
+    },
+  });
+}
+
+export interface Student {
+  id: string;
+  student_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  program: string;
+  areas_of_law: string;
+  location_preferences: string[];
+  work_preferences: string[];
+  is_matched: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Grade {
+  constitutional_law: string;
+  contracts: string;
+  criminal_law: string;
+  property_law: string;
+  torts: string;
+  lrw_case_brief: string;
+  lrw_multiple_case: string;
+  lrw_short_memo: string;
+}
+
+export interface AreaRanking {
+  id: string;
+  area_of_law: string;
+  ranking: number;
+  comments: string;
+}
+
+export interface SelfProposedExternship {
+  id: string;
+  organization_name: string;
+  contact_person: string;
+  contact_email: string;
+  description: string;
+  status: string;
+}
+
+export interface StudentProfile {
+  student: Student;
+  grades: Grade | null;
+  area_rankings: AreaRanking[];
+  self_proposed_externship: SelfProposedExternship | null;
+}

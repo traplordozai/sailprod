@@ -1,8 +1,14 @@
+/**
+ * File: frontend/src/pages/Admin/AdminLayout.tsx
+ * Purpose: Layout component for admin dashboard with navigation
+ */
+
 'use client'
 
-import React, { useState, FC, ReactNode } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import React, { useState, FC, ReactNode, Fragment } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Dialog, Menu, Transition } from '@headlessui/react'
+import type { MenuItemProps } from '@headlessui/react'
 import {
   Bars3Icon,
   BellIcon,
@@ -18,19 +24,49 @@ import {
 import { ChevronDownIcon, MagnifyingGlassIcon } from '@heroicons/react/20/solid'
 import westernLogo from '../../assets/images/western-law-reversed.png'
 
-const navigation = [
+interface NavigationSubItem {
+  name: string;
+  href: string;
+}
+
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  children?: Array<{
+    name: string;
+    href: string;
+  }>;
+}
+
+const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: HomeIcon },
   { name: 'Students', href: '/admin/students', icon: UserGroupIcon },
   { name: 'Organizations', href: '/admin/organizations', icon: BuildingOfficeIcon },
   { name: 'Faculty', href: '/admin/faculty', icon: AcademicCapIcon },
-  { name: 'Matching', href: '/admin/matching', icon: ChartBarIcon },
+  {
+    name: 'Matching',
+    href: '/admin/matching',
+    icon: ChartBarIcon,
+    children: [
+      { name: 'Overview', href: '/admin/matching' },
+      { name: 'Matches', href: '/admin/matches' },
+      { name: 'Rounds', href: '/admin/matching/rounds' }
+    ]
+  },
   { name: 'Grading', href: '/admin/grading', icon: DocumentTextIcon },
   { name: 'Settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ]
 
-const userNavigation = [
-  { name: 'Your profile', href: '#' },
-  { name: 'Sign out', href: '#' },
+interface UserNavigationItem {
+  name: string;
+  href: string;
+}
+
+const userNavigation: UserNavigationItem[] = [
+  { name: 'Your Profile', href: '/admin/profile' },
+  { name: 'Settings', href: '/admin/settings' },
+  { name: 'Sign out', href: '/logout' },
 ]
 
 function classNames(...classes: string[]): string {
@@ -41,17 +77,81 @@ interface AdminLayoutProps {
   children?: ReactNode;
 }
 
+const NavigationItems: FC<{
+  navigation: NavigationItem[];
+  location: ReturnType<typeof useLocation>;
+}> = ({ navigation, location }) => {
+  return (
+    <ul role="list" className="-mx-2 space-y-1">
+      {navigation.map((item) => {
+        const isActive = location.pathname.startsWith(item.href)
+        return (
+          <li key={item.name}>
+            <NavLink
+              to={item.href}
+              className={({ isActive }: { isActive: boolean }) =>
+                classNames(
+                  isActive
+                    ? 'bg-purple-800 text-white'
+                    : 'text-purple-100 hover:bg-purple-800 hover:text-white',
+                  'group flex gap-x-3 rounded-md p-2 text-sm font-semibold'
+                )
+              }
+            >
+              <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+              {item.name}
+            </NavLink>
+            {item.children && isActive && (
+              <ul className="mt-1 pl-8 space-y-1">
+                {item.children.map((child) => (
+                  <li key={child.name}>
+                    <NavLink
+                      to={child.href}
+                      className={({ isActive }: { isActive: boolean }) =>
+                        classNames(
+                          isActive
+                            ? 'bg-purple-700 text-white'
+                            : 'text-purple-200 hover:bg-purple-700 hover:text-white',
+                          'group flex gap-x-3 rounded-md p-2 text-sm'
+                        )
+                      }
+                    >
+                      {child.name}
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 const AdminLayout: FC<AdminLayoutProps> = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const location = useLocation()
 
   return (
     <>
       <div>
-        <Transition appear show={sidebarOpen} as={React.Fragment}>
+        {/* Mobile menu button */}
+        <button
+          type="button"
+          className="-m-2.5 p-2.5 text-gray-700 lg:hidden"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <span className="sr-only">Open sidebar</span>
+          <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+        </button>
+
+        <Transition appear show={sidebarOpen} as={Fragment}>
           <Dialog as="div" className="relative z-50 lg:hidden" onClose={() => setSidebarOpen(false)}>
-            <Transition.Child
-              as={React.Fragment}
+            {/* Backdrop */}
+            <Transition
+              as={Fragment}
               enter="transition-opacity ease-linear duration-300"
               enterFrom="opacity-0"
               enterTo="opacity-100"
@@ -60,11 +160,11 @@ const AdminLayout: FC<AdminLayoutProps> = () => {
               leaveTo="opacity-0"
             >
               <div className="fixed inset-0 bg-gray-900/80" />
-            </Transition.Child>
+            </Transition>
 
             <div className="fixed inset-0 flex">
-              <Transition.Child
-                as={React.Fragment}
+              <Transition
+                as={Fragment}
                 enter="transition ease-in-out duration-300 transform"
                 enterFrom="-translate-x-full"
                 enterTo="translate-x-0"
@@ -72,8 +172,19 @@ const AdminLayout: FC<AdminLayoutProps> = () => {
                 leaveFrom="translate-x-0"
                 leaveTo="-translate-x-full"
               >
-                <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
+                <div className="relative mr-16 flex w-full max-w-xs flex-1">
+                  {/* Close button */}
+                  <button
+                    type="button"
+                    className="absolute right-4 top-4 text-white"
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <span className="sr-only">Close sidebar</span>
+                    <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+                  </button>
+
                   <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-purple-900 px-6 pb-4 ring-1 ring-white/10">
+                    {/* Sidebar content */}
                     <div className="flex h-16 shrink-0 items-center mt-4">
                       <img
                         alt="Western Law"
@@ -82,33 +193,11 @@ const AdminLayout: FC<AdminLayoutProps> = () => {
                       />
                     </div>
                     <nav className="flex flex-1 flex-col">
-                      <ul role="list" className="-mx-2 space-y-1">
-                        {navigation.map((item) => {
-                          const isActive = location.pathname.startsWith(item.href)
-                          return (
-                            <li key={item.name}>
-                              <NavLink
-                                to={item.href}
-                                className={({ isActive }) =>
-                                  classNames(
-                                    isActive
-                                      ? 'bg-purple-800 text-white'
-                                      : 'text-purple-100 hover:bg-purple-800 hover:text-white',
-                                    'group flex gap-x-3 rounded-md p-2 text-sm font-semibold'
-                                  )
-                                }
-                              >
-                                <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                                {item.name}
-                              </NavLink>
-                            </li>
-                          )
-                        })}
-                      </ul>
+                      <NavigationItems navigation={navigation} location={location} />
                     </nav>
                   </div>
-                </Dialog.Panel>
-              </Transition.Child>
+                </div>
+              </Transition>
             </div>
           </Dialog>
         </Transition>
@@ -124,29 +213,7 @@ const AdminLayout: FC<AdminLayoutProps> = () => {
               />
             </div>
             <nav className="flex flex-1 flex-col">
-              <ul role="list" className="-mx-2 space-y-1">
-                {navigation.map((item) => {
-                  const isActive = location.pathname.startsWith(item.href)
-                  return (
-                    <li key={item.name}>
-                      <NavLink
-                        to={item.href}
-                        className={({ isActive }) =>
-                          classNames(
-                            isActive
-                              ? 'bg-purple-800 text-white'
-                              : 'text-purple-100 hover:bg-purple-800 hover:text-white',
-                            'group flex gap-x-3 rounded-md p-2 text-sm font-semibold'
-                          )
-                        }
-                      >
-                        <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                        {item.name}
-                      </NavLink>
-                    </li>
-                  )
-                })}
-              </ul>
+              <NavigationItems navigation={navigation} location={location} />
             </nav>
           </div>
         </div>
@@ -185,18 +252,21 @@ const AdminLayout: FC<AdminLayoutProps> = () => {
                 <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" />
 
                 <Menu as="div" className="relative">
-                  <div>
-                    <Menu.Button className="-m-1.5 flex items-center p-1.5">
-                      <span className="sr-only">Open user menu</span>
-                      <img
-                        className="h-8 w-8 rounded-full bg-gray-50"
-                        src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                        alt=""
-                      />
-                    </Menu.Button>
-                  </div>
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="-m-1.5 flex items-center p-1.5"
+                  >
+                    <span className="sr-only">Open user menu</span>
+                    <img
+                      className="h-8 w-8 rounded-full bg-gray-50"
+                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                      alt=""
+                    />
+                  </button>
+                  
                   <Transition
-                    as={React.Fragment}
+                    show={userMenuOpen}
+                    as={Fragment}
                     enter="transition ease-out duration-100"
                     enterFrom="transform opacity-0 scale-95"
                     enterTo="transform opacity-100 scale-100"
@@ -204,23 +274,26 @@ const AdminLayout: FC<AdminLayoutProps> = () => {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+                    <div 
+                      className="absolute right-0 z-10 mt-2.5 w-32 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none"
+                      onBlur={() => setUserMenuOpen(false)}
+                    >
                       {userNavigation.map((item) => (
-                        <Menu.Item key={item.name}>
-                          {({ active }) => (
-                            <a
-                              href={item.href}
-                              className={classNames(
-                                active ? 'bg-gray-50' : '',
-                                'block px-3 py-1 text-sm leading-6 text-gray-900'
-                              )}
-                            >
-                              {item.name}
-                            </a>
-                          )}
-                        </Menu.Item>
+                        <NavLink
+                          key={item.name}
+                          to={item.href}
+                          onClick={() => setUserMenuOpen(false)}
+                          className={({ isActive }: { isActive: boolean }) =>
+                            classNames(
+                              isActive ? 'bg-gray-50' : '',
+                              'block px-3 py-1 text-sm leading-6 text-gray-900 hover:bg-gray-50'
+                            )
+                          }
+                        >
+                          {item.name}
+                        </NavLink>
                       ))}
-                    </Menu.Items>
+                    </div>
                   </Transition>
                 </Menu>
               </div>

@@ -1,4 +1,9 @@
-/** @type {import('tailwindcss').Config} */
+/**
+ * File: frontend/tailwind.config.js
+ * Purpose: Tailwind CSS configuration
+ * Defines theme customization and content paths
+ */
+
 module.exports = {
   content: [
     "./index.html",

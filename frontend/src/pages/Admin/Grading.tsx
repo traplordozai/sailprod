@@ -1,3 +1,8 @@
+/**
+ * File: frontend/src/pages/Admin/Grading.tsx
+ * Purpose: Student grading management interface
+ */
+
 import React, { useState } from 'react'
 import {
   MagnifyingGlassIcon,

@@ -1,3 +1,8 @@
+/**
+ * File: frontend/src/components/CSVUpload.tsx
+ * Purpose: Component for CSV file upload functionality
+ */
+
 import React, { useState } from 'react';
 import axios from 'axios';
 

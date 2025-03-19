@@ -1,3 +1,8 @@
+/**
+ * File: frontend/src/types/images.d.ts
+ * Purpose: TypeScript declarations for image file imports
+ */
+
 declare module '*.png' {
   const value: string;
   export default value;

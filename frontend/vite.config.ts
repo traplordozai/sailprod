@@ -1,13 +1,18 @@
+/**
+ * File: frontend/vite.config.ts
+ * Purpose: TypeScript version of Vite configuration
+ */
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import * as path from 'path'
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ command, mode }) => ({
+  plugins: [react()] as any[],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'src': path.resolve(__dirname, './src'),
     },
   },
   build: {
@@ -35,4 +40,4 @@ export default defineConfig({
       'sa1l-frontend.onrender.com',
     ],
   }
-})
+}))

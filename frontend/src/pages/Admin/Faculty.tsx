@@ -1,3 +1,7 @@
+/**
+ * File: frontend/src/pages/Admin/Faculty.tsx
+ * Purpose: Faculty management interface for administrators
+ */
 import React, { useState } from 'react'
 import {
   MagnifyingGlassIcon,

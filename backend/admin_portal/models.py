@@ -4,18 +4,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 class Student(models.Model):
-    # Basic Information
-    given_names = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
-    student_id = models.CharField(max_length=50, unique=True)
-    
-    # Program and Preferences
-    program = models.CharField(max_length=255)
-    location_preferences = models.JSONField(default=list)  # List of preferred locations
-    work_preferences = models.JSONField(default=list)  # List of work preferences (in-person, hybrid, remote)
-    
-    # Areas of Law
+    # Add the AREAS_OF_LAW choices
     AREAS_OF_LAW = [
         ('SJHR', 'Social Justice and Human Rights Law'),
         ('PIL', 'Public Interest Law'),
@@ -27,30 +16,63 @@ class Student(models.Model):
         ('BL', 'Business Law'),
         ('IP', 'Intellectual Property'),
     ]
+
+    # Basic Information
+    given_names = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    email = models.EmailField(unique=True)
+    student_id = models.CharField(max_length=50, unique=True)
     
-    areas_of_interest = models.JSONField(default=list)  # List of selected areas
-    area_rankings = models.JSONField(default=dict)  # Dictionary of area rankings (1-5)
+    # Program and Preferences
+    program = models.CharField(max_length=255)
+    location_preferences = models.JSONField(default=list)  # List of preferred locations
+    work_preferences = models.JSONField(default=list)  # List of work preferences (in-person, hybrid, remote)
+    areas_of_interest = models.JSONField(default=list)  # List of areas of interest
+    area_rankings = models.JSONField(default=dict)  # Dictionary of area rankings
     
-    # Self-proposed Externship
+    # Self-proposed externship fields
     is_self_proposed = models.BooleanField(default=False)
-    self_proposed_org = models.CharField(max_length=255, blank=True, null=True)
-    self_proposed_area = models.CharField(max_length=50, choices=AREAS_OF_LAW, blank=True, null=True)
-    self_proposed_supervisor = models.CharField(max_length=255, blank=True, null=True)
-    self_proposed_role = models.CharField(max_length=255, blank=True, null=True)
-    self_proposed_email = models.EmailField(blank=True, null=True)
-    self_proposed_contact = models.TextField(blank=True, null=True)
-    self_proposed_statement = models.TextField(blank=True, null=True)
+    self_proposed_org = models.CharField(max_length=255, null=True, blank=True)
+    self_proposed_area = models.CharField(max_length=100, null=True, blank=True)
+    self_proposed_supervisor = models.CharField(max_length=255, null=True, blank=True)
     
-    # Status and Metadata
+    # Status fields
+    is_matched = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    needs_approval = models.BooleanField(default=False)
+    
+    # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-    
+    last_active = models.DateTimeField(null=True, blank=True)
+
     class Meta:
-        ordering = ['last_name', 'given_names']
-        
+        ordering = ['-created_at']
+
     def __str__(self):
+        return f"{self.given_names} {self.last_name} ({self.student_id})"
+
+    def save(self, *args, **kwargs):
+        if not self.pk:  # Only on creation
+            self.last_active = timezone.now()
+        super().save(*args, **kwargs)
+
+    @property
+    def full_name(self):
         return f"{self.given_names} {self.last_name}"
+
+    @property
+    def profile_completion(self):
+        required_fields = [
+            self.given_names,
+            self.last_name,
+            self.email,
+            self.student_id,
+            self.program,
+            self.areas_of_interest,
+        ]
+        completed = sum(1 for field in required_fields if field)
+        return (completed / len(required_fields)) * 100
 
 class Grade(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='grades')

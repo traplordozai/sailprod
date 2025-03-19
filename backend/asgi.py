@@ -1,4 +1,7 @@
 """
+File: backend/asgi.py
+Purpose: ASGI configuration for asynchronous web server interface
+""""""
 ASGI config for backend project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.

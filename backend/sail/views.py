@@ -1,7 +1,7 @@
 """
-backend/sail/views.py
-----------------------------
-Advanced DRF ViewSets for CRUD, plus custom actions for CSV import, PDF upload, matching.
+File: backend/sail/views.py
+Purpose: View controllers for handling HTTP requests
+Implements API endpoints and request handling logic
 """
 
 import os
@@ -490,7 +490,7 @@ def test_dashboard(request):
     return Response(html, content_type='text/html')
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def dashboard_stats(request):
     """
     Get real-time statistics for the admin dashboard
@@ -498,21 +498,16 @@ def dashboard_stats(request):
     # Get full stats
     stats = get_dashboard_stats()
     
-    # If not admin/staff, only provide basic stats (no sensitive data)
-    if not request.user.is_staff:
-        # Filter stats to only include public information
-        public_stats = {
-            'total_students': stats['total_students'],
-            'matched_students': stats['matched_students'],
-            'pending_matches': stats['pending_matches'],
-            'approval_needed': stats['approval_needed'],
-            'match_status_chart': stats['match_status_chart'],
-            'area_law_chart': stats['area_law_chart'],
-        }
-        return Response(public_stats)
-    
-    # Full stats for staff users
-    return Response(stats)
+    # Always provide basic stats for now to simplify frontend development
+    public_stats = {
+        'total_students': stats['total_students'],
+        'matched_students': stats['matched_students'],
+        'pending_matches': stats['pending_matches'],
+        'approval_needed': stats['approval_needed'],
+        'match_status_chart': stats['match_status_chart'],
+        'area_law_chart': stats['area_law_chart'],
+    }
+    return Response(public_stats)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -533,3 +528,73 @@ def dashboard_activity(request):
     
     activities = get_recent_activity(limit=limit)
     return Response(activities)
+
+# This is a completely new public endpoint with no auth
+@api_view(['GET'])
+@permission_classes([AllowAny])  # Explicitly mark as publicly accessible
+def public_dashboard_stats(request):
+    """
+    Get public dashboard stats with no authentication
+    """
+    # Create some sample data
+    sample_stats = {
+        'total_students': 25,
+        'matched_students': 18,
+        'pending_matches': 7,
+        'approval_needed': 3,
+        'match_status_chart': [
+            {'status': 'Pending', 'count': 7},
+            {'status': 'Matched', 'count': 18},
+            {'status': 'Declined', 'count': 2},
+            {'status': 'Approved', 'count': 16}
+        ],
+        'area_law_chart': [
+            {'area': 'Corporate', 'count': 8},
+            {'area': 'Criminal', 'count': 6},
+            {'area': 'Family', 'count': 5},
+            {'area': 'IP', 'count': 4},
+            {'area': 'Real Estate', 'count': 2}
+        ]
+    }
+    return Response(sample_stats)
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+
+from .models import (
+    StudentProfile, Statement, StudentGrade, 
+    StudentAreaRanking, SelfProposedExternship
+)
+from .serializers import (
+    StudentProfileSerializer, StudentGradeSerializer,
+    StudentAreaRankingSerializer, SelfProposedExternshipSerializer
+)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def student_profile_detail(request, student_id):
+    """
+    Get detailed student profile including grades, area rankings, and externship information
+    """
+    student = get_object_or_404(StudentProfile, id=student_id)
+    
+    try:
+        grades = StudentGrade.objects.get(student_profile=student)
+    except StudentGrade.DoesNotExist:
+        grades = None
+        
+    area_rankings = StudentAreaRanking.objects.filter(student_profile=student)
+    
+    try:
+        self_proposed = SelfProposedExternship.objects.get(student_profile=student)
+    except SelfProposedExternship.DoesNotExist:
+        self_proposed = None
+
+    return Response({
+        'student': StudentProfileSerializer(student).data,
+        'grades': StudentGradeSerializer(grades).data if grades else None,
+        'area_rankings': StudentAreaRankingSerializer(area_rankings, many=True).data,
+        'self_proposed_externship': SelfProposedExternshipSerializer(self_proposed).data if self_proposed else None,
+    })

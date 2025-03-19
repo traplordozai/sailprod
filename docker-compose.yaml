@@ -1,3 +1,7 @@
+# File: docker-compose.yaml
+# Purpose: Docker Compose configuration for local development environment
+# Defines services: db, redis, web, celery, and frontend
+
 version: '3.8'
 
 services:

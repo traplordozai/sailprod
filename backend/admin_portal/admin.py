@@ -1,3 +1,10 @@
+
+
+"""
+File: backend/admin_portal/admin.py
+Purpose: Django admin configurations for the admin portal
+"""
+
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import path

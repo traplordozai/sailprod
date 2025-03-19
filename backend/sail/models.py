@@ -1,7 +1,7 @@
 """
-backend/sail/models.py
------------------------------
-Core models for Student, Organization, Matching, etc.
+File: backend/sail/models.py
+Purpose: Core data models for the SAIL application
+Defines database schema and relationships
 """
 
 import uuid
@@ -153,10 +153,17 @@ class SelfProposedExternship(BaseModel):
 
 class OrganizationProfile(BaseModel):
     name = models.CharField(max_length=128, default="Unknown Organization")
-    area_of_law = models.CharField(max_length=64, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    # Change from string to M2M relationship
+    areas_of_law = models.ManyToManyField(AreaOfLaw, related_name='organizations')
     location = models.CharField(max_length=128, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    website = models.URLField(blank=True, null=True)
+    requirements = models.TextField(blank=True, null=True)
     available_positions = models.IntegerField(default=1)
     filled_positions = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -257,3 +264,40 @@ class SystemSetting(BaseModel):
             return json.loads(self.value)
         # String and other types returned as is
         return self.value
+
+class Externship(BaseModel):
+    EXTERNSHIP_TYPES = [
+        ('STANDARD', 'Standard Externship'),
+        ('SELF_PROPOSED', 'Self-Proposed Externship'),
+    ]
+
+    student_profile = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='externships')
+    organization_profile = models.ForeignKey(OrganizationProfile, on_delete=models.CASCADE, related_name='externships')
+    externship_type = models.CharField(max_length=20, choices=EXTERNSHIP_TYPES)
+    supervisor_name = models.CharField(max_length=100, blank=True, null=True)
+    supervisor_email = models.EmailField(blank=True, null=True)
+    supervisor_phone = models.CharField(max_length=20, blank=True, null=True)
+    area_of_law = models.ForeignKey(AreaOfLaw, on_delete=models.SET_NULL, null=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+    is_approved = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.student_profile} at {self.organization_profile} ({self.externship_type})"
+
+    def save(self, *args, **kwargs):
+        # If this is a self-proposed externship, sync with SelfProposedExternship
+        if self.externship_type == 'SELF_PROPOSED':
+            self_proposed, created = SelfProposedExternship.objects.get_or_create(
+                student_profile=self.student_profile
+            )
+            if self.organization_profile:
+                self_proposed.organization = self.organization_profile.name
+            if self.supervisor_name:
+                self_proposed.supervisor = self.supervisor_name
+            if self.supervisor_email:
+                self_proposed.supervisor_email = self.supervisor_email
+            self_proposed.save()
+
+        super().save(*args, **kwargs)

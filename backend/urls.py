@@ -1,9 +1,7 @@
 """
-backend/urls.py
-----------------------
-Root URL config that wires up:
-1. Django's built-in admin at /admin/
-2. Your app-level routes via /api/
+File: backend/urls.py
+Purpose: Main URL configuration for the Django project
+Defines root URL patterns and includes app-specific URL configurations
 """
 
 from django.contrib import admin

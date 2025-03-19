@@ -1,7 +1,6 @@
 """
-backend/sail/services/matching_algorithm.py
---------------------------------------------------
-Implements the logic from 1-NEW.md to match students to orgs/faculty.
+File: backend/sail/services/matching_algorithm.py
+Purpose: Implementation of the student-organization matching algorithm
 """
 
 from ..models import StudentProfile, OrganizationProfile, MatchingRound

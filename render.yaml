@@ -1,3 +1,7 @@
+# File: render.yaml
+# Purpose: Render platform deployment configuration
+# Defines web services and their environment variables
+
 services:
   - type: web
     name: sail-backend

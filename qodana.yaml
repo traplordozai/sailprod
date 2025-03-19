@@ -1,3 +1,6 @@
+# File: qodana.yaml
+# Purpose: JetBrains Qodana code quality tool configuration
+
 version: "1.0"
 linter: jetbrains/qodana-jvm:2024.3
 profile:

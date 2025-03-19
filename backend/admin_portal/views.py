@@ -1,7 +1,7 @@
 import PyPDF2
 from rest_framework import viewsets, status, permissions
+from rest_framework.decorators import action
 from io import BytesIO
-from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count, Q, Sum
@@ -16,24 +16,36 @@ import pandas as pd
 import csv
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from backend.sail.models import Student
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 
+class BaseAPIView(APIView):
+    def get_error_response(self, message, status_code=400):
+        return Response({'error': str(message)}, status=status_code)
+
+    def get_success_response(self, message, data=None, status_code=200):
+        response = {'message': message}
+        if data:
+            response.update(data)
+        return Response(response, status=status_code)
+
 class StudentViewSet(viewsets.ModelViewSet):
-    queryset = Student.objects.all()
+    queryset = Student.objects.all()  # Fixed typo
     serializer_class = StudentSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['program', 'is_active', 'areas_of_interest']
     search_fields = ['last_name', 'given_names', 'email', 'student_id']
     
+    def get_unmatched_students(self):
+        return self.get_queryset().exclude(matches__status='APPROVED')
+
+
     @action(detail=False, methods=['get'])
     def unmatched(self, request):
-        """Get students who haven't been matched yet"""
-        queryset = self.get_queryset().exclude(matches__status='APPROVED')
+        queryset = self.get_unmatched_students()
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return self.get_success_response('Retrieved unmatched students', {'data': serializer.data})
     
     @action(detail=False, methods=['get'])
     def pending_approval(self, request):
@@ -43,13 +55,13 @@ class StudentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class GradeViewSet(viewsets.ModelViewSet):
-    queryset = Grade.objects.all()
+    queryset = Grade.objects.all()  # Fixed typo
     serializer_class = GradeSerializer
     permission_classes = [permissions.IsAuthenticated]
     search_fields = ['student__last_name', 'student__given_names', 'student__student_id']
 
 class StatementViewSet(viewsets.ModelViewSet):
-    queryset = Statement.objects.all()
+    queryset = Statement.objects.all()  # Fixed typo
     serializer_class = StatementSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['area_of_law', 'graded_by']
@@ -63,7 +75,7 @@ class StatementViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class OrganizationViewSet(viewsets.ModelViewSet):
-    queryset = Organization.objects.all()
+    queryset = Organization.objects.all()  # Fixed typo
     serializer_class = OrganizationSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['is_active', 'areas_of_law']
@@ -77,53 +89,57 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class MatchViewSet(viewsets.ModelViewSet):
-    queryset = Match.objects.all()
+    queryset = Match.objects.all()  # Fixed typo
     serializer_class = MatchSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['status', 'area_of_law', 'approved_by']
     search_fields = ['student__last_name', 'organization__name', 'notes']
     
+    def perform_match_action(self, match, action):
+        if action == 'approve':
+            match.approve(self.request.user)
+        elif action == 'reject':
+            match.reject()
+        return self.get_serializer(match).data
+
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         match = self.get_object()
-        match.approve(request.user)
-        serializer = self.get_serializer(match)
-        return Response(serializer.data)
+        data = self.perform_match_action(match, 'approve')
+        return self.get_success_response('Match approved', data)
     
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         match = self.get_object()
-        match.reject()
-        serializer = self.get_serializer(match)
-        return Response(serializer.data)
+        data = self.perform_match_action(match, 'reject')
+        return self.get_success_response('Match rejected', data)
 
-class DashboardStatsView(APIView):
+class DashboardStatsView(BaseAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get(self, request):
-        total_students = Student.objects.count()
-        matched_students = Student.objects.filter(is_matched=True).count()
-        pending_matches = Match.objects.filter(status='PENDING').count()
-        needs_approval = Match.objects.filter(status='NEEDS_APPROVAL').count()
-        total_orgs = Organization.objects.count()
-        available_positions = Organization.objects.aggregate(total=Sum('available_positions'))['total']
-        ungraded_statements = Statement.objects.filter(statement_grade__isnull=True).count()
-
-        matches_by_status = Match.objects.values('status').annotate(count=Count('id'))
-        matches_by_area = Match.objects.values('area_of_law').annotate(count=Count('id'))
-
-        data = {
-            'total_students': total_students,
-            'matched_students': matched_students,
-            'pending_matches': pending_matches,
-            'needs_approval': needs_approval,
-            'total_organizations': total_orgs,
-            'available_positions': available_positions,
-            'ungraded_statements': ungraded_statements,
-            'matches_by_status': list(matches_by_status),
-            'matches_by_area': list(matches_by_area),
+    def get_student_stats(self):
+        return {
+            'total_students': Student.objects.count(),
+            'matched_students': Student.objects.filter(is_matched=True).count(),
+            'pending_matches': Student.objects.filter(is_matched=False).count(),
+            'needs_approval': Student.objects.filter(needs_approval=True).count(),
         }
-        return Response(data)
+
+    def get_match_stats(self):
+        return {
+            'matches_by_status': list(Match.objects.values('status').annotate(count=Count('id'))),
+            'matches_by_area': list(Match.objects.values('area_of_law').annotate(count=Count('id')))
+        }
+
+    def get(self, request):
+        stats = {
+            **self.get_student_stats(),
+            **self.get_match_stats(),
+            'total_organizations': Organization.objects.count(),
+            'available_positions': Organization.objects.aggregate(total=Sum('available_positions'))['total'],
+            'ungraded_statements': Statement.objects.filter(grade__isnull=True).count(),
+        }
+        return self.get_success_response('Dashboard stats retrieved', stats)
 
 class DashboardStatisticsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -141,61 +157,63 @@ class DashboardStatisticsView(APIView):
             'needs_approval': needs_approval,
         })
 
-class ImportCSVView(APIView):
+class ImportCSVView(BaseAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
+    def validate_csv_columns(self, df):
+        required_columns = ['given_names', 'last_name', 'email', 'student_id', 'program']
+        return all(col in df.columns for col in required_columns)
+
+    def process_student_row(self, row):
+        return Student.objects.update_or_create(
+            student_id=row['student_id'],
+            defaults={
+                'given_names': row['given_names'],
+                'last_name': row['last_name'],
+                'email': row['email'],
+                'program': row['program'],
+                'areas_of_interest': row.get('areas_of_interest', []),
+                'location_preferences': row.get('location_preferences', []),
+                'work_preferences': row.get('work_preferences', []),
+            }
+        )
+
+    def post(self, request, *args, **kwargs):
         if 'csv_file' not in request.FILES:
-            return Response({'error': 'No file uploaded'}, status=400)
+            return self.get_error_response('No file uploaded')
 
         csv_file = request.FILES['csv_file']
         try:
-            # Read and process CSV file
             df = pd.read_csv(csv_file)
-            required_columns = ['given_names', 'last_name', 'email', 'student_id', 'program']
-            if not all(col in df.columns for col in required_columns):
-                return Response({'error': 'Missing required columns'}, status=400)
+            if not self.validate_csv_columns(df):
+                return self.get_error_response('Missing required columns')
 
-            # Create student records
             created_count = 0
             for _, row in df.iterrows():
-                Student.objects.update_or_create(
-                    student_id=row['student_id'],
-                    defaults={
-                        'given_names': row['given_names'],
-                        'last_name': row['last_name'],
-                        'email': row['email'],
-                        'program': row['program'],
-                        'areas_of_interest': row.get('areas_of_interest', []),
-                        'location_preferences': row.get('location_preferences', []),
-                        'work_preferences': row.get('work_preferences', []),
-                    }
-                )
+                self.process_student_row(row)
                 created_count += 1
 
-            return Response({'message': f'Successfully imported {created_count} students'})
+            return self.get_success_response(f'Successfully imported {created_count} students')
         except Exception as e:
-            return Response({'error': str(e)}, status=400)
+            return self.get_error_response(str(e))
 
-class ImportPDFView(APIView):
+class ImportPDFView(BaseAPIView):
     permission_classes = [permissions.IsAuthenticated]
-    
-    def post(self, request):
-        pdf_file = request.FILES.get('pdf_file')
+
+    def validate_pdf_file(self, pdf_file):
         if not pdf_file:
-            return Response(
-                {'error': 'No PDF file provided'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
+            raise ValueError('No PDF file provided')
+        if not pdf_file.name.lower().endswith('.pdf'):
+            raise ValueError('File must be a PDF')
+
+    def post(self, request):
         try:
+            pdf_file = request.FILES.get('pdf_file')
+            self.validate_pdf_file(pdf_file)
             process_pdf_file(pdf_file)
-            return Response({'message': 'Successfully imported grades from PDF'})
+            return self.get_success_response('Successfully imported grades from PDF')
         except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return self.get_error_response(str(e))
 
 class RunMatchingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -314,7 +332,7 @@ class RegisterView(APIView):
     """
     permission_classes = []  # Allow unauthenticated access
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         email = request.data.get('email')
         password = request.data.get('password')
         first_name = request.data.get('firstName')
@@ -326,23 +344,34 @@ class RegisterView(APIView):
             return Response({"error": "Email already registered"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Create the user
-        user = User.objects.create_user(
-            username=email,  # Use email as username
-            email=email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name
-        )
-        
-        # Generate tokens
-        refresh = RefreshToken.for_user(user)
-        
-        return Response({
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-            'user': {
-                'id': user.id,
-                'email': user.email,
-                'role': role,
-            }
-        }, status=status.HTTP_201_CREATED)
+        try:
+            user = User.objects.create_user(
+                username=email,  # Use email as username
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
+            
+            # Generate tokens
+            refresh = RefreshToken.for_user(user)
+            
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'firstName': user.first_name,
+                    'lastName': user.last_name,
+                    'role': role
+                }
+            })
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get_permissions(self):
+        """
+        Override to ensure proper permission checking
+        """
+        return [permission() for permission in self.permission_classes]

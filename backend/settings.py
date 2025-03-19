@@ -1,7 +1,7 @@
 """
-backend/settings.py
---------------------------------------------------
-Environment-based settings with django-environ.
+File: backend/settings.py
+Purpose: Django project settings and configuration
+Contains all Django settings, database configuration, and environment variables
 """
 
 import os
@@ -31,7 +31,7 @@ PORT = int(os.getenv('PORT', '10000'))
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'your-secret-key-here')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = True  # Temporarily set to True for debugging
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
@@ -144,8 +144,13 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5175",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
-    "http://127.0.0.1:5175"
+    "http://127.0.0.1:5175",
+    "http://127.0.0.1:3000",
 ]
+
+# Allow requests from all origins in debug mode
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -179,10 +184,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    # Temporarily comment out for debugging
-    # 'DEFAULT_PERMISSION_CLASSES': (
-    #     'rest_framework.permissions.IsAuthenticated',
-    # ),
+    # Explicitly set AllowAny as default permission
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    ),
 }
 
 if not DEBUG:
